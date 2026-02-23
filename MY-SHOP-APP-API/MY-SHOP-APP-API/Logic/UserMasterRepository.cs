@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using MY_SHOP_APP_API.Data;
 using MY_SHOP_APP_API.Models;
 
@@ -32,11 +33,23 @@ namespace MY_SHOP_APP_API.Logic
 
             var total = await query.CountAsync();
 
-            var items = await query
-                .OrderBy(u => u.UserId)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+            // Some SQL Server versions do not support OFFSET/FETCH (used by Skip/Take with OrderBy).
+            // To remain compatible with older servers, we avoid generating OFFSET by using Take to limit
+            // rows on the server and performing the final Skip in memory when necessary.
+            var ordered = query.OrderBy(u => u.UserId);
+
+            List<UserMaster> items;
+            if (pageNumber <= 1)
+            {
+                items = await ordered.Take(pageSize).ToListAsync();
+            }
+            else
+            {
+                // fetch up to pageNumber * pageSize rows on server (translated to TOP N), then skip in memory
+                var take = pageNumber * pageSize;
+                var limited = await ordered.Take(take).ToListAsync();
+                items = limited.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+            }
 
             return new MY_SHOP_APP_API.Models.PagedResult<UserMaster>
             {
