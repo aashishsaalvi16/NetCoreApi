@@ -65,6 +65,34 @@ namespace MY_SHOP_APP_API.Logic
             return await _context.UserMasters.FindAsync(id);
         }
 
+        public async Task<UserMaster?> GetByPhoneOrEmailAsync(string? phone, string? email)
+        {
+            if (string.IsNullOrWhiteSpace(phone) && string.IsNullOrWhiteSpace(email))
+                return null;
+
+            // normalize inputs to lower-case; assume phone/email are stored normalized in DB
+            string? phoneNorm = phone?.Trim().ToLowerInvariant();
+            string? emailNorm = email?.Trim().ToLowerInvariant();
+
+            return await _context.UserMasters.AsNoTracking()
+                .FirstOrDefaultAsync(u =>
+                    (phoneNorm != null && u.Phone == phoneNorm) ||
+                    (emailNorm != null && u.Email == emailNorm));
+        }
+
+        public async Task<UserMaster?> GetByPhoneAndEmailAsync(string phone, string email)
+        {
+            if (string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(email))
+                return null;
+
+            var phoneNorm = phone.Trim().ToLowerInvariant();
+            var emailNorm = email.Trim().ToLowerInvariant();
+
+            // compare directly assuming DB stores normalized lower-case values
+            return await _context.UserMasters.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Phone == phoneNorm && u.Email == emailNorm);
+        }
+
         public async Task<UserMaster> AddAsync(UserMaster entity)
         {
             _context.UserMasters.Add(entity);

@@ -45,15 +45,26 @@ namespace MY_SHOP_APP_API.Business
             return MapToDto(entity);
         }
 
-        public async Task<MY_SHOP_APP_API.Models.DTOs.UserMasterDto> CreateAsync(MY_SHOP_APP_API.Models.DTOs.CreateUserMasterDto model)
+        public async Task<MY_SHOP_APP_API.Models.OperationResult<MY_SHOP_APP_API.Models.DTOs.UserMasterDto>> CreateAsync(MY_SHOP_APP_API.Models.DTOs.CreateUserMasterDto model)
         {
+            // validate: user with same phone AND email should not already exist
+            if (!string.IsNullOrWhiteSpace(model.Phone) && !string.IsNullOrWhiteSpace(model.Email))
+            {
+                var exists = await _repository.GetByPhoneAndEmailAsync(model.Phone, model.Email);
+                if (exists != null)
+                {
+                    return MY_SHOP_APP_API.Models.OperationResult<MY_SHOP_APP_API.Models.DTOs.UserMasterDto>.Fail("User with same phone and email already exists.");
+                }
+            }
+
             var entity = new UserMaster
             {
                 FirstName = model.FirstName,
                 MiddleName = model.MiddleName,
                 LastName = model.LastName,
-                Phone = model.Phone,
-                Email = model.Email,
+                // normalize and store phone/email in lowercase for consistent lookups/indexing
+                Phone = model.Phone?.Trim().ToLowerInvariant(),
+                Email = model.Email?.Trim().ToLowerInvariant(),
                 Address1 = model.Address1,
                 Address2 = model.Address2,
                 CreatedBy = model.CreatedBy,
@@ -63,7 +74,7 @@ namespace MY_SHOP_APP_API.Business
 
             var created = await _repository.AddAsync(entity);
             _logger.LogInformation("Created UserMaster with id {UserId}", created.UserId);
-            return MapToDto(created);
+            return MY_SHOP_APP_API.Models.OperationResult<MY_SHOP_APP_API.Models.DTOs.UserMasterDto>.Ok(MapToDto(created));
         }
 
         public async Task<bool> UpdateAsync(int id, MY_SHOP_APP_API.Models.DTOs.UpdateUserMasterDto model)
@@ -75,8 +86,9 @@ namespace MY_SHOP_APP_API.Business
             existing.FirstName = model.FirstName;
             existing.MiddleName = model.MiddleName;
             existing.LastName = model.LastName;
-            existing.Phone = model.Phone;
-            existing.Email = model.Email;
+            // normalize phone/email before storing
+            existing.Phone = model.Phone?.Trim().ToLowerInvariant();
+            existing.Email = model.Email?.Trim().ToLowerInvariant();
             existing.Address1 = model.Address1;
             existing.Address2 = model.Address2;
             existing.ModifiedOn = DateTime.UtcNow;

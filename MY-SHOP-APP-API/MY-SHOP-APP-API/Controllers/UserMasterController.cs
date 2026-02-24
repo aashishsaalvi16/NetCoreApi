@@ -37,7 +37,13 @@ namespace MY_SHOP_APP_API.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var created = await _service.CreateAsync(model);
+            var result = await _service.CreateAsync(model);
+            if (!result.Success)
+            {
+                return Conflict(new { message = result.Message });
+            }
+
+            var created = result.Data!;
             return CreatedAtAction(nameof(Get), new { id = created.UserId }, created);
         }
 
