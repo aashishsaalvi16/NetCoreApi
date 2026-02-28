@@ -22,6 +22,10 @@ namespace MY_SHOP_APP_API.Models.DTOs
         [MaxLength(50)]
         public string? Email { get; set; }
 
+        [Required]
+        [MinLength(6)]
+        public string Password { get; set; } = string.Empty;
+
         [MaxLength(100)]
         public string? Address1 { get; set; }
 

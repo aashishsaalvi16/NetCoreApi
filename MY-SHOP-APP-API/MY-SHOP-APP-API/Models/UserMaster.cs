@@ -27,6 +27,15 @@ namespace MY_SHOP_APP_API.Models
         [MaxLength(50)]
         public string? Email { get; set; }
 
+        [MaxLength(255)]
+        public string? PasswordHash { get; set; }
+
+        public DateTime? PasswordLastChanged { get; set; }
+
+        public int FailedAttempts { get; set; }
+
+        public DateTime? LockoutUntil { get; set; }
+
         [MaxLength(100)]
         public string? Address1 { get; set; }
 

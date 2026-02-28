@@ -30,6 +30,10 @@ namespace MY_SHOP_APP_API.Data
                 entity.Property(e => e.Email).HasMaxLength(50);
                 entity.Property(e => e.Address1).HasMaxLength(100);
                 entity.Property(e => e.Address2).HasMaxLength(100);
+                entity.Property(e => e.PasswordHash).HasMaxLength(255);
+                entity.Property(e => e.PasswordLastChanged);
+                entity.Property(e => e.FailedAttempts).IsRequired();
+                entity.Property(e => e.LockoutUntil);
                 entity.Property(e => e.CreatedOn).IsRequired();
                 entity.Property(e => e.CreatedBy).HasMaxLength(50);
                 entity.Property(e => e.ModifiedOn);

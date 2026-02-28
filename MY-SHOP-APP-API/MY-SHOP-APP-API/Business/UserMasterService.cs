@@ -72,9 +72,56 @@ namespace MY_SHOP_APP_API.Business
                 IsActive = model.IsActive
             };
 
+            // hash password and set password metadata
+            entity.PasswordHash = MY_SHOP_APP_API.Business.PasswordHelper.HashPassword(model.Password);
+            entity.PasswordLastChanged = DateTime.UtcNow;
+            entity.FailedAttempts = 0;
+            entity.LockoutUntil = null;
+
             var created = await _repository.AddAsync(entity);
             _logger.LogInformation("Created UserMaster with id {UserId}", created.UserId);
             return MY_SHOP_APP_API.Models.OperationResult<MY_SHOP_APP_API.Models.DTOs.UserMasterDto>.Ok(MapToDto(created));
+        }
+
+        public async Task<MY_SHOP_APP_API.Models.OperationResult<MY_SHOP_APP_API.Models.DTOs.UserMasterDto>> AuthenticateAsync(MY_SHOP_APP_API.Models.DTOs.LoginRequestDto model)
+        {
+            if (string.IsNullOrWhiteSpace(model.Email) && string.IsNullOrWhiteSpace(model.Phone))
+                return MY_SHOP_APP_API.Models.OperationResult<MY_SHOP_APP_API.Models.DTOs.UserMasterDto>.Fail("Email or phone is required.");
+
+            // normalize
+            var phone = model.Phone?.Trim().ToLowerInvariant();
+            var email = model.Email?.Trim().ToLowerInvariant();
+
+            var user = await _repository.GetByPhoneOrEmailAsync(phone, email);
+            if (user == null)
+                return MY_SHOP_APP_API.Models.OperationResult<MY_SHOP_APP_API.Models.DTOs.UserMasterDto>.Fail("Invalid credentials.");
+
+            // check lockout
+            if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.UtcNow)
+            {
+                return MY_SHOP_APP_API.Models.OperationResult<MY_SHOP_APP_API.Models.DTOs.UserMasterDto>.Fail($"Account locked until {user.LockoutUntil.Value:u}");
+            }
+
+            var verified = MY_SHOP_APP_API.Business.PasswordHelper.VerifyHashedPassword(user.PasswordHash, model.Password);
+            if (!verified)
+            {
+                // increment failed attempts
+                user.FailedAttempts += 1;
+                // lockout after 5 failed attempts for 15 minutes
+                if (user.FailedAttempts >= 5)
+                {
+                    user.LockoutUntil = DateTime.UtcNow.AddMinutes(15);
+                }
+                await _repository.UpdateAsync(user);
+                return MY_SHOP_APP_API.Models.OperationResult<MY_SHOP_APP_API.Models.DTOs.UserMasterDto>.Fail("Invalid credentials.");
+            }
+
+            // successful login: reset counters
+            user.FailedAttempts = 0;
+            user.LockoutUntil = null;
+            await _repository.UpdateAsync(user);
+
+            return MY_SHOP_APP_API.Models.OperationResult<MY_SHOP_APP_API.Models.DTOs.UserMasterDto>.Ok(MapToDto(user));
         }
 
         public async Task<bool> UpdateAsync(int id, MY_SHOP_APP_API.Models.DTOs.UpdateUserMasterDto model)

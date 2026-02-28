@@ -47,6 +47,24 @@ namespace MY_SHOP_APP_API.Controllers
             return CreatedAtAction(nameof(Get), new { id = created.UserId }, created);
         }
 
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] MY_SHOP_APP_API.Models.DTOs.LoginRequestDto model)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var result = await _service.AuthenticateAsync(model);
+            if (!result.Success)
+            {
+                // if account locked return 423 Locked else Unauthorized
+                if (result.Message != null && result.Message.StartsWith("Account locked"))
+                    return StatusCode(423, new { message = result.Message });
+
+                return Unauthorized(new { message = result.Message });
+            }
+
+            return Ok(result.Data);
+        }
+
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] MY_SHOP_APP_API.Models.DTOs.UpdateUserMasterDto model)
         {
