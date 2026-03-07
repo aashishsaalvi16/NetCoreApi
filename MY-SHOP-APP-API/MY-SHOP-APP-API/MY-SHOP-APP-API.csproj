@@ -11,6 +11,8 @@
     <!-- Removed Microsoft.AspNetCore.OpenApi to avoid conflict with Swashbuckle.AspNetCore -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.9" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 

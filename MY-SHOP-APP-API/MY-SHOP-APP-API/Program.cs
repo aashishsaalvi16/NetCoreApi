@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MY_SHOP_APP_API.Data;
 using MY_SHOP_APP_API.Business;
 using MY_SHOP_APP_API.Logic;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,13 @@ builder.Services.AddScoped<IUserMasterService, UserMasterService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Configure Serilog for file logging
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.File("Logs/shop-app-api-.log", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -35,6 +43,7 @@ if (app.Environment.IsDevelopment())
         // c.RoutePrefix = string.Empty;
     });
 }
+
 // Use exception handling middleware
 app.UseMiddleware<MY_SHOP_APP_API.Middleware.ExceptionHandlingMiddleware>();
 
